@@ -9,11 +9,17 @@ pub struct Def {
     #[cfg(feature = "wkt")]
     /// Well-Known Text definition (e.g. `GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]`)
     pub wkt: &'static str,
+    /// Area of use coordinates in EPSG:4326 (longitude/latitude) in the order: [west, south, east, north]
+    #[cfg(feature = "area_of_use")]
+    pub area_of_use: Option<[f64; 4]>, // [west, south, east, north]
+    /// Projected bounds in native CRS coordinates in the order: [west, south, east, north]
+    #[cfg(feature = "projected_bounds")]
+    pub projected_bounds: Option<[f64; 4]>, // [west, south, east, north]
 }
 
 macro_rules! defs {
     ($(
-        $name:ident|$code:literal|$proj4:literal|$wkt:literal|
+        $name:ident|$code:literal|$proj4:literal|$wkt:literal $(|$a_west:literal,$a_south:literal,$a_east:literal,$a_north:literal)? $(;$p_west:literal,$p_south:literal,$p_east:literal,$p_north:literal)?|
     )*) => {
         $(
             pub const $name: Def = Def {
@@ -22,9 +28,19 @@ macro_rules! defs {
                 proj4: $proj4,
                 #[cfg(feature = "wkt")]
                 wkt: $wkt,
+                #[cfg(feature = "area_of_use")]
+                area_of_use: defs!(@bounds $($a_west, $a_south, $a_east, $a_north)?),
+                #[cfg(feature = "projected_bounds")]
+                projected_bounds: defs!(@bounds $($p_west, $p_south, $p_east, $p_north)?),
             };
         )*
-    }
+    };
+    (@bounds $west:literal, $south:literal, $east:literal, $north:literal) => {
+        Some([$west, $south, $east, $north])
+    };
+    (@bounds) => {
+        None
+    };
 }
 
 #[rustfmt::skip]
